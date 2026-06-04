@@ -104,3 +104,19 @@ if __name__ == "__main__":
 
     for device in devices:
         print(device)
+
+def get_known_devices():
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT ip, mac
+    FROM devices
+    """)
+
+    devices = cursor.fetchall()
+
+    conn.close()
+
+    return devices
