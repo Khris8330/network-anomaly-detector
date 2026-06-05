@@ -82,6 +82,24 @@ def get_all_devices():
 
     return results
       
+def get_devices_dict():
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT ip, mac
+    FROM devices
+    """)
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return {
+        mac: ip
+        for ip, mac in rows
+    }
    
 if __name__ == "__main__":
 
