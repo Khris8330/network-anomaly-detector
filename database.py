@@ -4,16 +4,17 @@ from pathlib import Path
 DB_PATH = "data/network.db"
 
 
+# -----------------------------
+# DATABASE INITIALIZATION
+# -----------------------------
 def create_database():
-    """
-    Create database and tables if they don't exist.
-    """
 
     Path("data").mkdir(exist_ok=True)
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    # ---------------- DEVICE TABLE ----------------
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS devices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,17 +25,34 @@ def create_database():
     )
     """)
 
+    # ---------------- ALERTS TABLE ----------------
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS alerts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        network TEXT NOT NULL,
+        alert_type TEXT NOT NULL,
+        mac TEXT,
+        ip TEXT,
+        severity TEXT,
+        message TEXT,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     conn.commit()
     conn.close()
 
+
+# -----------------------------
+# DEVICE STORAGE
+# -----------------------------
 def save_device(ip, mac):
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT id FROM devices
-    WHERE mac = ?
+    SELECT id FROM devices WHERE mac = ?
     """, (mac,))
 
     existing = cursor.fetchone()
@@ -58,13 +76,12 @@ def save_device(ip, mac):
     conn.commit()
     conn.close()
 
+
 def save_scan_results(devices):
 
     for device in devices:
-        save_device(
-            device["ip"],
-            device["mac"]
-        )
+        save_device(device["ip"], device["mac"])
+
 
 def get_all_devices():
 
@@ -74,49 +91,33 @@ def get_all_devices():
     cursor.execute("""
     SELECT ip, mac, first_seen, last_seen
     FROM devices
-    """)
-
-    results = cursor.fetchall()
-
-    conn.close()
-
-    return results
-      
-def get_devices_dict():
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-    SELECT ip, mac
-    FROM devices
+    ORDER BY last_seen DESC
     """)
 
     rows = cursor.fetchall()
-
     conn.close()
 
-    return {
-        mac: ip
-        for ip, mac in rows
-    }
-    
-def get_known_devices():
+    return rows
+
+
+def get_mac_ip_map():
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT ip, mac
-    FROM devices
+    SELECT ip, mac FROM devices
     """)
 
-    devices = cursor.fetchall()
-
+    rows = cursor.fetchall()
     conn.close()
 
-    return devices
- 
+    return {mac: ip for ip, mac in rows}
+
+
+# -----------------------------
+# DEVICE STATISTICS
+# -----------------------------
 def get_device_stats():
 
     conn = sqlite3.connect(DB_PATH)
@@ -129,87 +130,49 @@ def get_device_stats():
 
     return {
         "total_devices": total
-    }  
+    }
 
-def get_device_vendors():
+
+# -----------------------------
+# ALERT SYSTEM (NEW)
+# -----------------------------
+def save_alert(network, alert_type, mac, ip, severity, message):
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT mac FROM devices
-    """)
+    INSERT INTO alerts (network, alert_type, mac, ip, severity, message)
+    VALUES (?, ?, ?, ?, ?, ?)
+    """, (network, alert_type, mac, ip, severity, message))
 
-    rows = cursor.fetchall()
+    conn.commit()
     conn.close()
 
-    return [row[0] for row in rows]
 
-
-def get_recent_devices(limit=5):
+def get_recent_alerts(limit=20):
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT ip, mac, last_seen
-    FROM devices
-    ORDER BY last_seen DESC
+    SELECT network, alert_type, mac, ip, severity, message, timestamp
+    FROM alerts
+    ORDER BY timestamp DESC
     LIMIT ?
     """, (limit,))
 
-    results = cursor.fetchall()
-    conn.close()
-
-    return results
-
-def get_mac_ip_map():
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-    SELECT mac, ip FROM devices
-    """)
-
     rows = cursor.fetchall()
     conn.close()
 
-    return {mac: ip for mac, ip in rows}
+    return rows
 
-def get_all_macs():
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-    SELECT mac FROM devices
-    """)
-
-    rows = cursor.fetchall()
-    conn.close()
-
-    return {r[0] for r in rows}
-
+# -----------------------------
+# OPTIONAL TEST RUN
+# -----------------------------
 if __name__ == "__main__":
 
     create_database()
 
-    sample_devices = [
-        {
-            "ip": "192.168.1.10",
-            "mac": "AA:BB:CC:DD:EE:FF"
-        },
-        {
-            "ip": "192.168.1.20",
-            "mac": "11:22:33:44:55:66"
-        }
-    ]
-
-    save_scan_results(sample_devices)
-
-    devices = get_all_devices()
-
-    for device in devices:
-        print(device)
-
+    print("Database initialized successfully.")
