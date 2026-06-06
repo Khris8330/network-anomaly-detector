@@ -1,49 +1,61 @@
 from scanner import scan_network
-from database import get_mac_ip_map, get_all_macs
+from database import get_mac_ip_map, save_alert
 
 NETWORK = "10.0.2.0/24"
 
 
-def detect_threats():
+def detect_threats(network=NETWORK):
 
     baseline = get_mac_ip_map()
+    current_scan = scan_network(network)
+
     baseline_macs = set(baseline.keys())
-
-    current_scan = scan_network(NETWORK)
-
     current_macs = set()
-    current_map = {}
 
     new_devices = []
     missing_devices = []
     ip_spoofing = []
 
-    # build current state
     for device in current_scan:
 
         mac = device["mac"]
         ip = device["ip"]
 
         current_macs.add(mac)
-        current_map[mac] = ip
 
-        # NEW DEVICE DETECTION
+        # NEW DEVICE
         if mac not in baseline_macs:
 
             new_devices.append(device)
 
-        # IP SPOOF DETECTION
-        if mac in baseline:
+            save_alert(
+                network,
+                "NEW_DEVICE",
+                mac,
+                ip,
+                "MEDIUM",
+                f"New device detected: {mac}"
+            )
 
-            if baseline[mac] != ip:
+        # SPOOF DETECTION
+        if mac in baseline and baseline[mac] != ip:
 
-                ip_spoofing.append({
-                    "mac": mac,
-                    "old_ip": baseline[mac],
-                    "new_ip": ip
-                })
+            ip_spoofing.append({
+                "mac": mac,
+                "old_ip": baseline[mac],
+                "new_ip": ip
+            })
 
-    # MISSING DEVICE DETECTION
+            save_alert(
+                network,
+                "IP_SPOOF",
+                mac,
+                ip,
+                "HIGH",
+                f"IP changed from {baseline[mac]} to {ip}"
+            )
+
+    # MISSING DEVICES
     for mac in baseline_macs:
 
         if mac not in current_macs:
@@ -52,5 +64,14 @@ def detect_threats():
                 "mac": mac,
                 "ip": baseline[mac]
             })
+
+            save_alert(
+                network,
+                "MISSING_DEVICE",
+                mac,
+                baseline[mac],
+                "LOW",
+                f"Device disappeared: {mac}"
+            )
 
     return new_devices, missing_devices, ip_spoofing
