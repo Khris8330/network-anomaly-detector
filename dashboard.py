@@ -1,5 +1,7 @@
 from flask import Flask, render_template
 
+from database import get_recent_alerts
+
 from database import (
     get_all_devices,
     get_device_stats,
