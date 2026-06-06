@@ -12,41 +12,55 @@
             margin: 20px;
         }
 
-        .header {
-            font-size: 24px;
-            margin-bottom: 20px;
+        h1 {
+            margin-bottom: 10px;
         }
 
-        .grid {
+        /* ---------------- TOP STATS ---------------- */
+        .stats {
             display: flex;
             gap: 15px;
             margin-bottom: 20px;
         }
 
         .card {
+            flex: 1;
             background: #1e293b;
             padding: 15px;
             border-radius: 10px;
-            flex: 1;
         }
 
+        .card h2 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        /* ---------------- LAYOUT ---------------- */
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        /* ---------------- DEVICE TABLE ---------------- */
         table {
             width: 70%;
-            float: left;
             border-collapse: collapse;
             background: #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
         }
 
         th, td {
             padding: 10px;
             border-bottom: 1px solid #334155;
+            text-align: left;
         }
 
         th {
             background: #111827;
-            text-align: left;
         }
 
+        /* ---------------- RISK COLORS ---------------- */
         .risk-high {
             color: #ef4444;
             font-weight: bold;
@@ -62,48 +76,71 @@
             font-weight: bold;
         }
 
+        /* ---------------- ALERT PANEL ---------------- */
         .alerts {
-            width: 28%;
-            float: right;
+            width: 30%;
             background: #1e293b;
             padding: 15px;
             border-radius: 10px;
+            height: 500px;
+            overflow-y: auto;
         }
 
         .alert-item {
             border-bottom: 1px solid #334155;
-            padding: 8px 0;
+            padding: 10px 0;
+        }
+
+        .network-tag {
+            color: #60a5fa;
+            font-weight: bold;
+        }
+
+        .severity-HIGH {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .severity-MEDIUM {
+            color: #facc15;
+            font-weight: bold;
+        }
+
+        .severity-LOW {
+            color: #22c55e;
+            font-weight: bold;
         }
 
     </style>
-
-    <meta http-equiv="refresh" content="10">
-
 </head>
 
 <body>
 
-    <div class="header">Network Security Dashboard</div>
+<h1>Network Security Dashboard</h1>
 
-    <div class="grid">
+<!-- ================= STATS ================= -->
+<div class="stats">
 
-        <div class="card">
-            <h3>Total Devices</h3>
-            <h2>{{ stats.total_devices }}</h2>
-        </div>
-
-        <div class="card">
-            <h3>Status</h3>
-            <h2>Monitoring Active</h2>
-        </div>
-
-        <div class="card">
-            <h3>Alert Feed</h3>
-            <h2>Live</h2>
-        </div>
-
+    <div class="card">
+        <h3>Total Devices</h3>
+        <h2>{{ stats.total_devices }}</h2>
     </div>
 
+    <div class="card">
+        <h3>Status</h3>
+        <h2>Active Monitoring</h2>
+    </div>
+
+    <div class="card">
+        <h3>Alert System</h3>
+        <h2>Multi-Network</h2>
+    </div>
+
+</div>
+
+<div class="container">
+
+    <!-- ================= DEVICE TABLE ================= -->
     <table>
 
         <tr>
@@ -136,20 +173,41 @@
 
     </table>
 
+    <!-- ================= ALERT PANEL ================= -->
     <div class="alerts">
 
-        <h3>Recent Activity</h3>
+        <h3>Security Alerts (Multi-Network)</h3>
 
         {% for alert in alerts %}
 
         <div class="alert-item">
-            <strong>{{ alert[0] }}</strong><br>
-            {{ alert[1] }}
+
+            <div>
+                <span class="network-tag">[{{ alert[0] }}]</span>
+                <span class="severity-{{ alert[4] }}">
+                    {{ alert[1] }}
+                </span>
+            </div>
+
+            <div>
+                MAC: {{ alert[2] }} | IP: {{ alert[3] }}
+            </div>
+
+            <div>
+                {{ alert[5] }}
+            </div>
+
+            <small>
+                {{ alert[6] }}
+            </small>
+
         </div>
 
         {% endfor %}
 
     </div>
+
+</div>
 
 </body>
 </html>
