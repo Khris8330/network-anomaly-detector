@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Network Security Dashboard</title>
+
+    <style>
+
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            margin: 20px;
+        }
+
+        .header {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        table {
+            width: 70%;
+            float: left;
+            border-collapse: collapse;
+            background: #1e293b;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #334155;
+        }
+
+        th {
+            background: #111827;
+            text-align: left;
+        }
+
+        .risk-high {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .risk-medium {
+            color: #facc15;
+            font-weight: bold;
+        }
+
+        .risk-low {
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .alerts {
+            width: 28%;
+            float: right;
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .alert-item {
+            border-bottom: 1px solid #334155;
+            padding: 8px 0;
+        }
+
+    </style>
+
+    <meta http-equiv="refresh" content="10">
+
+</head>
+
+<body>
+
+    <div class="header">Network Security Dashboard</div>
+
+    <div class="grid">
+
+        <div class="card">
+            <h3>Total Devices</h3>
+            <h2>{{ stats.total_devices }}</h2>
+        </div>
+
+        <div class="card">
+            <h3>Status</h3>
+            <h2>Monitoring Active</h2>
+        </div>
+
+        <div class="card">
+            <h3>Alert Feed</h3>
+            <h2>Live</h2>
+        </div>
+
+    </div>
+
+    <table>
+
+        <tr>
+            <th>IP</th>
+            <th>MAC</th>
+            <th>Vendor</th>
+            <th>Risk</th>
+            <th>Last Seen</th>
+        </tr>
+
+        {% for device in devices %}
+
+        <tr>
+            <td>{{ device.ip }}</td>
+            <td>{{ device.mac }}</td>
+            <td>{{ device.vendor }}</td>
+
+            <td class="
+                {% if device.risk == 'HIGH' %}risk-high{% endif %}
+                {% if device.risk == 'MEDIUM' %}risk-medium{% endif %}
+                {% if device.risk == 'LOW' %}risk-low{% endif %}
+            ">
+                {{ device.risk }}
+            </td>
+
+            <td>{{ device.last_seen }}</td>
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    <div class="alerts">
+
+        <h3>Recent Activity</h3>
+
+        {% for alert in alerts %}
+
+        <div class="alert-item">
+            <strong>{{ alert[0] }}</strong><br>
+            {{ alert[1] }}
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</body>
+</html>

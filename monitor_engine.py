@@ -1,88 +1,50 @@
-import time
-from datetime import datetime
-
-from anomaly import detect_anomalies
+from anomaly import detect_threats
 from alert_manager import is_new_alert
+import time
 
 INTERVAL = 5
 
 
-def log_event(message):
+def run_engine():
 
-    with open("logs/security.log", "a") as f:
-        f.write(f"[{datetime.now()}] {message}\n")
-
-
-def run_monitor():
-
-    print("Starting real-time network monitoring...\n")
+    print("Starting real threat monitoring engine...\n")
 
     while True:
 
-        new_devices, missing_devices, ip_changes = detect_anomalies()
+        new_devices, missing_devices, ip_spoofing = detect_threats()
 
-        # NEW DEVICES
-        for device in new_devices:
+        # NEW DEVICE ALERTS
+        for d in new_devices:
 
-            alert_id = f"NEW-{device['mac']}"
-
-            if is_new_alert(alert_id):
-
-                msg = (
-                    f"[NEW DEVICE] "
-                    f"IP={device['ip']} "
-                    f"MAC={device['mac']}"
-                )
-
-                print(msg)
-                log_event(msg)
-
-        # MISSING DEVICES
-        for device in missing_devices:
-
-            alert_id = f"MISSING-{device['mac']}"
+            alert_id = f"NEW-{d['mac']}"
 
             if is_new_alert(alert_id):
 
-                msg = (
-                    f"[MISSING DEVICE] "
-                    f"IP={device['ip']} "
-                    f"MAC={device['mac']}"
-                )
+                print(f"[NEW DEVICE] {d['mac']} | {d['ip']}")
 
-                print(msg)
-                log_event(msg)
+        # MISSING DEVICE ALERTS
+        for d in missing_devices:
 
-        # IP CHANGES
-        for change in ip_changes:
-
-            alert_id = (
-                f"IPCHANGE-"
-                f"{change['mac']}-"
-                f"{change['new_ip']}"
-            )
+            alert_id = f"MISSING-{d['mac']}"
 
             if is_new_alert(alert_id):
 
-                msg = (
-                    f"[IP CHANGE] "
-                    f"MAC={change['mac']} "
-                    f"OLD={change['old_ip']} "
-                    f"NEW={change['new_ip']}"
-                )
+                print(f"[MISSING DEVICE] {d['mac']}")
 
-                print(msg)
-                log_event(msg)
+        # SPOOFING ALERTS (HIGH SEVERITY)
+        for d in ip_spoofing:
 
-        if (
-            not new_devices
-            and not missing_devices
-            and not ip_changes
-        ):
-            print("No changes detected.")
+            alert_id = f"SPOOF-{d['mac']}"
+
+            if is_new_alert(alert_id):
+
+                print(f"[⚠ SPOOFING DETECTED] {d['mac']} {d['old_ip']} → {d['new_ip']}")
+
+        if not new_devices and not missing_devices and not ip_spoofing:
+            print("No threats detected.")
 
         time.sleep(INTERVAL)
 
 
 if __name__ == "__main__":
-    run_monitor()
+    run_engine()

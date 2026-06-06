@@ -1,106 +1,56 @@
 from scanner import scan_network
-from database import get_devices_dict
-from fingerprint import get_vendor
+from database import get_mac_ip_map, get_all_macs
 
-from network_utils import get_subnet
-
-NETWORK = get_subnet()
+NETWORK = "10.0.2.0/24"
 
 
-def detect_anomalies():
+def detect_threats():
 
-    known_devices = get_devices_dict()
+    baseline = get_mac_ip_map()
+    baseline_macs = set(baseline.keys())
 
     current_scan = scan_network(NETWORK)
 
-    current_devices = {
-        device["mac"]: device["ip"]
-        for device in current_scan
-    }
+    current_macs = set()
+    current_map = {}
 
     new_devices = []
     missing_devices = []
-    ip_changes = []
+    ip_spoofing = []
 
-    # Detect new devices
+    # build current state
+    for device in current_scan:
 
-    for mac, ip in current_devices.items():
+        mac = device["mac"]
+        ip = device["ip"]
 
-        if mac not in known_devices:
+        current_macs.add(mac)
+        current_map[mac] = ip
 
-            new_devices.append({
-                "mac": mac,
-                "ip": ip
-            })
+        # NEW DEVICE DETECTION
+        if mac not in baseline_macs:
 
-    # Detect missing devices
+            new_devices.append(device)
 
-    for mac, ip in known_devices.items():
+        # IP SPOOF DETECTION
+        if mac in baseline:
 
-        if mac not in current_devices:
+            if baseline[mac] != ip:
+
+                ip_spoofing.append({
+                    "mac": mac,
+                    "old_ip": baseline[mac],
+                    "new_ip": ip
+                })
+
+    # MISSING DEVICE DETECTION
+    for mac in baseline_macs:
+
+        if mac not in current_macs:
 
             missing_devices.append({
                 "mac": mac,
-                "ip": ip
+                "ip": baseline[mac]
             })
 
-    # Detect IP changes
-
-    for mac in current_devices:
-
-        if mac in known_devices:
-
-            old_ip = known_devices[mac]
-            new_ip = current_devices[mac]
-
-            if old_ip != new_ip:
-
-                ip_changes.append({
-                    "mac": mac,
-                    "old_ip": old_ip,
-                    "new_ip": new_ip
-                })
-
-    return new_devices, missing_devices, ip_changes
-
-
-if __name__ == "__main__":
-
-    new_devices, missing_devices, ip_changes = detect_anomalies()
-
-    print("\nANOMALY REPORT")
-    print("=" * 50)
-
-    if new_devices:
-
-        print("\n[NEW DEVICES]")
-
-        for device in new_devices:
-
-            print(device)
-
-    if missing_devices:
-
-        print("\n[MISSING DEVICES]")
-
-        for device in missing_devices:
-
-            print(device)
-
-    if ip_changes:
-
-        print("\n[IP CHANGES]")
-
-        for change in ip_changes:
-
-            print(change)
-
-    if (
-        not new_devices
-        and not missing_devices
-        and not ip_changes
-    ):
-        print("No anomalies detected.")
-
-from risk_engine import calculate_risk
-from fingerprint import get_vendor
+    return new_devices, missing_devices, ip_spoofing

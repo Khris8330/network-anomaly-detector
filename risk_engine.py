@@ -22,3 +22,27 @@ def calculate_risk(device, known_devices):
         level = "LOW"
 
     return score, level
+
+def calculate_risk(device, anomalies):
+
+    score = 0
+
+    # New device = risk
+    if device.get("is_new"):
+        score += 40
+
+    # IP change = serious
+    if device.get("ip_changed"):
+        score += 50
+
+    # Unknown vendor
+    if device.get("vendor") == "Unknown":
+        score += 10
+
+    if score >= 70:
+        return "HIGH"
+
+    if score >= 30:
+        return "MEDIUM"
+
+    return "LOW"

@@ -100,7 +100,97 @@ def get_devices_dict():
         mac: ip
         for ip, mac in rows
     }
-   
+    
+def get_known_devices():
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT ip, mac
+    FROM devices
+    """)
+
+    devices = cursor.fetchall()
+
+    conn.close()
+
+    return devices
+ 
+def get_device_stats():
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM devices")
+    total = cursor.fetchone()[0]
+
+    conn.close()
+
+    return {
+        "total_devices": total
+    }  
+
+def get_device_vendors():
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT mac FROM devices
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [row[0] for row in rows]
+
+
+def get_recent_devices(limit=5):
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT ip, mac, last_seen
+    FROM devices
+    ORDER BY last_seen DESC
+    LIMIT ?
+    """, (limit,))
+
+    results = cursor.fetchall()
+    conn.close()
+
+    return results
+
+def get_mac_ip_map():
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT mac, ip FROM devices
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return {mac: ip for mac, ip in rows}
+
+def get_all_macs():
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT mac FROM devices
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return {r[0] for r in rows}
+
 if __name__ == "__main__":
 
     create_database()
@@ -123,18 +213,3 @@ if __name__ == "__main__":
     for device in devices:
         print(device)
 
-def get_known_devices():
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-    SELECT ip, mac
-    FROM devices
-    """)
-
-    devices = cursor.fetchall()
-
-    conn.close()
-
-    return devices
