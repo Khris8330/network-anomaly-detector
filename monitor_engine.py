@@ -1,50 +1,35 @@
 from anomaly import detect_threats
-from alert_manager import is_new_alert
 import time
 
-INTERVAL = 5
+NETWORKS = [
+    "10.0.2.0/24",
+    "192.168.1.0/24"
+]
 
 
-def run_engine():
+def run():
 
-    print("Starting real threat monitoring engine...\n")
+    print("Multi-Network Threat Engine Running...\n")
 
     while True:
 
-        new_devices, missing_devices, ip_spoofing = detect_threats()
+        for net in NETWORKS:
 
-        # NEW DEVICE ALERTS
-        for d in new_devices:
+            new, missing, spoof = detect_threats(net)
 
-            alert_id = f"NEW-{d['mac']}"
+            print(f"\n[SCAN] {net}")
 
-            if is_new_alert(alert_id):
+            if new:
+                print("NEW:", len(new))
 
-                print(f"[NEW DEVICE] {d['mac']} | {d['ip']}")
+            if missing:
+                print("MISSING:", len(missing))
 
-        # MISSING DEVICE ALERTS
-        for d in missing_devices:
+            if spoof:
+                print("SPOOF:", len(spoof))
 
-            alert_id = f"MISSING-{d['mac']}"
-
-            if is_new_alert(alert_id):
-
-                print(f"[MISSING DEVICE] {d['mac']}")
-
-        # SPOOFING ALERTS (HIGH SEVERITY)
-        for d in ip_spoofing:
-
-            alert_id = f"SPOOF-{d['mac']}"
-
-            if is_new_alert(alert_id):
-
-                print(f"[⚠ SPOOFING DETECTED] {d['mac']} {d['old_ip']} → {d['new_ip']}")
-
-        if not new_devices and not missing_devices and not ip_spoofing:
-            print("No threats detected.")
-
-        time.sleep(INTERVAL)
+        time.sleep(10)
 
 
 if __name__ == "__main__":
-    run_engine()
+    run()
