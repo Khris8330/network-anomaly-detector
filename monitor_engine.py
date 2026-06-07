@@ -1,35 +1,29 @@
 from anomaly import detect_threats
+from network_utils import get_subnet
 import time
 
-NETWORKS = [
-    "10.0.2.0/24",
-    "192.168.1.0/24"
-]
-
-
 def run():
-
     print("Multi-Network Threat Engine Running...\n")
-
     while True:
+        network = get_subnet()
+        if not network:
+            print("[WARN] Could not detect network, retrying in 10s...")
+            time.sleep(10)
+            continue
 
-        for net in NETWORKS:
+        new, missing, spoof = detect_threats(network)
 
-            new, missing, spoof = detect_threats(net)
-
-            print(f"\n[SCAN] {net}")
-
-            if new:
-                print("NEW:", len(new))
-
-            if missing:
-                print("MISSING:", len(missing))
-
-            if spoof:
-                print("SPOOF:", len(spoof))
+        # Only print if something noteworthy happened
+        if new or spoof:
+            print(f"\n[SCAN] {network}")
+        if new:
+            print(f"  NEW DEVICES    : {len(new)}")
+        if spoof:
+            print(f"  SPOOF DETECTED : {len(spoof)}")
+        if missing:
+            print(f"  MISSING        : {len(missing)}")
 
         time.sleep(10)
-
 
 if __name__ == "__main__":
     run()

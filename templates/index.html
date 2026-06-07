@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Network Security Dashboard</title>
-
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,17 +9,13 @@
             color: white;
             margin: 20px;
         }
-
-        h1 {
-            margin-bottom: 20px;
-        }
+        h1 { margin-bottom: 20px; }
 
         .stats {
             display: flex;
             gap: 20px;
             margin-bottom: 20px;
         }
-
         .card {
             background: #1e293b;
             padding: 15px;
@@ -28,35 +23,134 @@
             min-width: 180px;
         }
 
+        /* TABS */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 0;
+        }
+        .tab-btn {
+            background: #1e293b;
+            color: #94a3b8;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .tab-btn:hover {
+            background: #273549;
+            color: white;
+        }
+        .tab-btn.active {
+            background: #334155;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            background: #1e293b;
+            border-radius: 0 8px 8px 8px;
+            padding: 20px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* TABLES */
         table {
             width: 100%;
             border-collapse: collapse;
             background: #1e293b;
         }
-
-        th {
-            background: #111827;
-        }
-
+        th { background: #111827; }
         th, td {
             padding: 10px;
             border-bottom: 1px solid #334155;
             text-align: left;
         }
 
-        .risk-low {
-            color: #22c55e;
+        /* RISK COLOURS */
+        .risk-none { color: #94a3b8; font-weight: bold; }
+        .risk-low { color: #22c55e; font-weight: bold; }
+        .risk-medium { color: #facc15; font-weight: bold; }
+        .risk-high { color: #ef4444; font-weight: bold; }
+        .risk-critical {
+            color: #ff00ff;
             font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
-        .risk-medium {
-            color: #facc15;
-            font-weight: bold;
+        /* RISK EXPLAINER */
+        .risk-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            margin-left: 6px;
+            color: #94a3b8;
+        }
+        .risk-btn:hover { color: white; }
+        .reason-row { display: none; background: #0f172a; }
+        .reason-row.open { display: table-row; }
+        .reason-box {
+            padding: 10px 20px;
+            border-left: 3px solid #334155;
+        }
+        .reason-box ul { margin: 5px 0; padding-left: 20px; }
+        .reason-box li {
+            margin: 6px 0;
+            color: #e2e8f0;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .reason-title {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
         }
 
-        .risk-high {
-            color: #ef4444;
-            font-weight: bold;
+        /* LEGEND */
+        .legend {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+        .legend h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .legend-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .legend-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 160px;
+        }
+        .legend-label { font-weight: bold; font-size: 13px; }
+        .legend-desc { font-size: 12px; color: #94a3b8; }
+
+        /* HISTORY BADGE */
+        .history-count {
+            background: #334155;
+            color: #94a3b8;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin-left: 6px;
         }
     </style>
 </head>
@@ -64,62 +158,202 @@
 
 <h1>Network Security Dashboard</h1>
 
+<!-- STATS -->
 <div class="stats">
-
     <div class="card">
         <h3>Total Devices</h3>
         <p>{{ stats.total_devices }}</p>
     </div>
-
     <div class="card">
         <h3>Active Devices</h3>
-        <p>{{ stats.active_devices }}</p>
+        <p>{{ stats.get('active_devices', '—') }}</p>
     </div>
-
 </div>
 
-<table>
+<!-- TABS -->
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('devices', this)">Live Devices</button>
+    <button class="tab-btn" onclick="switchTab('history', this)">
+        Scan History
+        <span class="history-count">{{ history|length }}</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('alerts', this)">Alerts</button>
+</div>
 
-    <tr>
-        <th>IP Address</th>
-        <th>MAC Address</th>
-        <th>Vendor</th>
-        <th>Risk</th>
-        <th>First Seen</th>
-        <th>Last Seen</th>
-    </tr>
+<!-- TAB: LIVE DEVICES -->
+<div class="tab-content active" id="tab-devices">
 
-    {% for device in devices %}
+    <!-- LEGEND -->
+    <div class="legend">
+        <h3>Risk Level Guide</h3>
+        <div class="legend-items">
+            <div class="legend-item">
+                <span class="legend-label risk-none">NONE</span>
+                <span class="legend-desc">Known device, recognised vendor</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-label risk-low">LOW</span>
+                <span class="legend-desc">New device with known vendor, or known device with unknown vendor</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-label risk-medium">MEDIUM</span>
+                <span class="legend-desc">Reconnected frequently, active at unusual hours, or new unknown vendor</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-label risk-high">HIGH</span>
+                <span class="legend-desc">IP changed on same MAC, randomised MAC, or 7+ reconnects in an hour</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-label risk-critical">CRITICAL</span>
+                <span class="legend-desc">Multiple high-risk flags detected simultaneously</span>
+            </div>
+        </div>
+    </div>
 
-    <tr>
+    <table>
+        <tr>
+            <th>IP Address</th>
+            <th>MAC Address</th>
+            <th>Vendor</th>
+            <th>Risk</th>
+            <th>First Seen</th>
+            <th>Last Seen</th>
+        </tr>
+        {% for device in devices %}
+        <tr>
+            <td>{{ device.ip }}</td>
+            <td>{{ device.mac }}</td>
+            <td>{{ device.vendor }}</td>
+            <td>
+                <span class="
+                    {% if device.risk == 'CRITICAL' %}risk-critical
+                    {% elif device.risk == 'HIGH' %}risk-high
+                    {% elif device.risk == 'MEDIUM' %}risk-medium
+                    {% elif device.risk == 'LOW' %}risk-low
+                    {% else %}risk-none{% endif %}
+                ">{{ device.risk }}</span>
+                {% if device.risk_reasons %}
+                <button class="risk-btn" onclick="toggleReasons('dev-{{ loop.index }}')">▼ why?</button>
+                {% endif %}
+            </td>
+            <td>{{ device.first_seen }}</td>
+            <td>{{ device.last_seen }}</td>
+        </tr>
+        {% if device.risk_reasons %}
+        <tr class="reason-row" id="dev-{{ loop.index }}">
+            <td colspan="6">
+                <div class="reason-box">
+                    <div class="reason-title">Risk factors detected:</div>
+                    <ul>
+                        {% for reason in device.risk_reasons %}
+                        <li>{{ reason }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+    </table>
+</div>
 
-        <td>{{ device.ip }}</td>
+<!-- TAB: SCAN HISTORY -->
+<div class="tab-content" id="tab-history">
+    <table>
+        <tr>
+            <th>#</th>
+            <th>IP Address</th>
+            <th>MAC Address</th>
+            <th>Vendor</th>
+            <th>Risk</th>
+            <th>First Seen</th>
+            <th>Last Seen</th>
+        </tr>
+        {% for device in history %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ device.ip }}</td>
+            <td>{{ device.mac }}</td>
+            <td>{{ device.vendor }}</td>
+            <td>
+                <span class="
+                    {% if device.risk == 'CRITICAL' %}risk-critical
+                    {% elif device.risk == 'HIGH' %}risk-high
+                    {% elif device.risk == 'MEDIUM' %}risk-medium
+                    {% elif device.risk == 'LOW' %}risk-low
+                    {% else %}risk-none{% endif %}
+                ">{{ device.risk }}</span>
+                {% if device.risk_reasons %}
+                <button class="risk-btn" onclick="toggleReasons('hist-{{ loop.index }}')">▼ why?</button>
+                {% endif %}
+            </td>
+            <td>{{ device.first_seen }}</td>
+            <td>{{ device.last_seen }}</td>
+        </tr>
+        {% if device.risk_reasons %}
+        <tr class="reason-row" id="hist-{{ loop.index }}">
+            <td colspan="7">
+                <div class="reason-box">
+                    <div class="reason-title">Risk factors detected:</div>
+                    <ul>
+                        {% for reason in device.risk_reasons %}
+                        <li>{{ reason }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+    </table>
+</div>
 
-        <td>{{ device.mac }}</td>
+<!-- TAB: ALERTS -->
+<div class="tab-content" id="tab-alerts">
+    <table>
+        <tr>
+            <th>Time</th>
+            <th>Network</th>
+            <th>Type</th>
+            <th>MAC</th>
+            <th>IP</th>
+            <th>Severity</th>
+            <th>Message</th>
+        </tr>
+        {% for alert in alerts %}
+        <tr>
+            <td>{{ alert[6] }}</td>
+            <td>{{ alert[0] }}</td>
+            <td>{{ alert[1] }}</td>
+            <td>{{ alert[2] }}</td>
+            <td>{{ alert[3] }}</td>
+            <td class="
+                {% if alert[4] == 'HIGH' %}risk-high
+                {% elif alert[4] == 'MEDIUM' %}risk-medium
+                {% elif alert[4] == 'LOW' %}risk-low
+                {% else %}risk-none{% endif %}
+            ">{{ alert[4] }}</td>
+            <td>{{ alert[5] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
 
-        <td>{{ device.vendor }}</td>
+<script>
+    function switchTab(name, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + name).classList.add('active');
+        btn.classList.add('active');
+    }
 
-        <td class="
-            {% if device.risk == 'HIGH' %}
-                risk-high
-            {% elif device.risk == 'MEDIUM' %}
-                risk-medium
-            {% else %}
-                risk-low
-            {% endif %}
-        ">
-            {{ device.risk }}
-        </td>
-
-        <td>{{ device.first_seen }}</td>
-
-        <td>{{ device.last_seen }}</td>
-
-    </tr>
-
-    {% endfor %}
-
-</table>
+    function toggleReasons(id) {
+        const row = document.getElementById(id);
+        row.classList.toggle('open');
+        const btn = row.previousElementSibling.querySelector('.risk-btn');
+        btn.textContent = row.classList.contains('open') ? '▲ hide' : '▼ why?';
+    }
+</script>
 
 </body>
 </html>
