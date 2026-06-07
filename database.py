@@ -1,5 +1,14 @@
 import sqlite3
 from pathlib import Path
+import os
+
+def fix_permissions():
+
+    if os.path.exists("data/network.db"):
+        os.chmod("data/network.db", 0o664)
+
+    if os.path.exists("data"):
+        os.chmod("data", 0o775)
 
 DB_PATH = "data/network.db"
 
@@ -48,9 +57,12 @@ def create_database():
 # -----------------------------
 def save_device(ip, mac):
 
+    import os
+    print("[DB PATH]", os.path.abspath(DB_PATH))
+    
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
+    
     cursor.execute("""
     SELECT id FROM devices WHERE mac = ?
     """, (mac,))
@@ -75,6 +87,8 @@ def save_device(ip, mac):
 
     conn.commit()
     conn.close()
+    
+    print("[DB WRITE] done")
 
 
 def save_scan_results(devices):
@@ -167,6 +181,8 @@ def get_recent_alerts(limit=20):
 
     return rows
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "data/network.db")
 
 # -----------------------------
 # OPTIONAL TEST RUN

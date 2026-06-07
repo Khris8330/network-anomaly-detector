@@ -1,3 +1,11 @@
+import os
+import sys
+
+if os.geteuid() == 0:
+    print("\n[ERROR] Do NOT run this project with sudo.")
+    print("It will break database permissions and cause system errors.\n")
+    sys.exit(1)
+
 from scanner import scan_network
 from database import get_mac_ip_map, save_alert
 
